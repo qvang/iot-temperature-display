@@ -1,0 +1,246 @@
+[
+  {
+    "id": "coursev1_flow",
+    "type": "tab",
+    "label": "Interface v1",
+    "disabled": false,
+    "info": "Temperature and humidity interface. Import separately from existing team flows."
+  },
+  {
+    "id": "coursev1_temp",
+    "type": "mqtt in",
+    "z": "coursev1_flow",
+    "name": "Temperature readings",
+    "topic": "+/temperature",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "coursev1_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 120,
+    "wires": [
+      [
+        "coursev1_normalize"
+      ]
+    ]
+  },
+  {
+    "id": "coursev1_hum",
+    "type": "mqtt in",
+    "z": "coursev1_flow",
+    "name": "Humidity readings",
+    "topic": "+/humidity",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "coursev1_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 170,
+    "wires": [
+      [
+        "coursev1_normalize"
+      ]
+    ]
+  },
+  {
+    "id": "coursev1_combined",
+    "type": "mqtt in",
+    "z": "coursev1_flow",
+    "name": "Optional combined JSON",
+    "topic": "home/sensors",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "coursev1_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 220,
+    "wires": [
+      [
+        "coursev1_normalize"
+      ]
+    ]
+  },
+  {
+    "id": "coursev1_broker",
+    "type": "mqtt-broker",
+    "name": "MQTT broker (change IP if needed)",
+    "broker": "127.0.0.1",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {}
+  },
+  {
+    "id": "coursev1_test",
+    "type": "inject",
+    "z": "coursev1_flow",
+    "name": "Test: send one example reading",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "test/readings",
+    "payload": "{\"temperature\":22.4,\"humidity\":48.3}",
+    "payloadType": "json",
+    "x": 200,
+    "y": 310,
+    "wires": [
+      [
+        "coursev1_normalize"
+      ]
+    ]
+  },
+  {
+    "id": "coursev1_normalize",
+    "type": "function",
+    "z": "coursev1_flow",
+    "name": "Prepare readings for dashboard",
+    "func": "// Converts MQTT values into a consistent format for the dashboard.\n// Supported topics: home/temperature, sensor/temperature,\n// home/humidity, sensor/humidity, or home/sensors (JSON).\nlet data = msg.payload\n\nif (Buffer.isBuffer(data)) data = data.toString()\nif (typeof data === 'string') {\n    try { data = JSON.parse(data) }\n    catch (error) { data = Number(data) }\n}\n\nlet temperature = null\nlet humidity = null\nconst topic = msg.topic || ''\n\nif (data && typeof data === 'object' && !Array.isArray(data)) {\n    temperature = data.temperature ?? null\n    humidity = data.humidity ?? null\n} else if (topic.endsWith('/temperature')) {\n    temperature = data\n} else if (topic.endsWith('/humidity')) {\n    humidity = data\n} else {\n    return null\n}\n\nfunction valid(value, min, max) {\n    return value !== null && value !== '' && Number.isFinite(Number(value))\n        && Number(value) >= min && Number(value) <= max\n}\n\nconst hasTemperature = valid(temperature, -30, 80)\nconst hasHumidity = valid(humidity, 0, 100)\nif (!hasTemperature && !hasHumidity) return null\n\nmsg.payload = {\n    interfaceV1: true,\n    temperature: hasTemperature ? Number(temperature) : null,\n    humidity: hasHumidity ? Number(humidity) : null,\n    source: topic === 'test/readings' ? 'test' : 'live'\n}\nreturn msg\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 490,
+    "y": 180,
+    "wires": [
+      [
+        "coursev1_ui",
+        "coursev1_debug"
+      ]
+    ]
+  },
+  {
+    "id": "coursev1_debug",
+    "type": "debug",
+    "z": "coursev1_flow",
+    "name": "Interface data (optional debug)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 790,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "coursev1_ui",
+    "type": "ui-template",
+    "z": "coursev1_flow",
+    "group": "coursev1_group",
+    "page": "",
+    "ui": "",
+    "name": "Dashboard layout",
+    "order": 1,
+    "width": "12",
+    "height": "11",
+    "head": "",
+    "format": "<template>\n  <div class=\"monitor-v1\">\n    <header>\n      <h1>Temperature &amp; Humidity</h1>\n      <span class=\"version\">Version 1</span>\n    </header>\n\n    <div class=\"readings\">\n      <section class=\"panel\">\n        <p class=\"label\">Temperature</p>\n        <p class=\"value\">{{ temperature === null ? '—' : temperature.toFixed(1) }}<small>°C</small></p>\n      </section>\n      <section class=\"panel\">\n        <p class=\"label\">Humidity</p>\n        <p class=\"value\">{{ humidity === null ? '—' : humidity.toFixed(1) }}<small>%</small></p>\n      </section>\n    </div>\n\n    <div class=\"charts\">\n      <section class=\"panel\">\n        <h2>Temperature history</h2>\n        <svg viewBox=\"0 0 480 150\" aria-label=\"Temperature history\">\n          <line x1=\"0\" y1=\"40\" x2=\"480\" y2=\"40\" />\n          <line x1=\"0\" y1=\"80\" x2=\"480\" y2=\"80\" />\n          <line x1=\"0\" y1=\"120\" x2=\"480\" y2=\"120\" />\n          <polyline :points=\"chartPoints(temperatureHistory)\" class=\"temp-line\" />\n          <text v-if=\"temperatureHistory.length < 2\" x=\"240\" y=\"82\" text-anchor=\"middle\">Waiting for readings</text>\n        </svg>\n      </section>\n      <section class=\"panel\">\n        <h2>Humidity history</h2>\n        <svg viewBox=\"0 0 480 150\" aria-label=\"Humidity history\">\n          <line x1=\"0\" y1=\"40\" x2=\"480\" y2=\"40\" />\n          <line x1=\"0\" y1=\"80\" x2=\"480\" y2=\"80\" />\n          <line x1=\"0\" y1=\"120\" x2=\"480\" y2=\"120\" />\n          <polyline :points=\"chartPoints(humidityHistory)\" class=\"humidity-line\" />\n          <text v-if=\"humidityHistory.length < 2\" x=\"240\" y=\"82\" text-anchor=\"middle\">Waiting for readings</text>\n        </svg>\n      </section>\n    </div>\n\n    <footer>\n      {{ status }}\n      <span v-if=\"updatedAt\"> · Last reading: {{ updatedAt }}</span>\n    </footer>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      temperature: null,\n      humidity: null,\n      temperatureHistory: [],\n      humidityHistory: [],\n      status: 'Waiting for readings',\n      updatedAt: ''\n    }\n  },\n  watch: {\n    msg: {\n      handler(message) {\n        if (!message?.payload?.interfaceV1) return\n        const reading = message.payload\n\n        if (typeof reading.temperature === 'number') {\n          this.temperature = reading.temperature\n          this.temperatureHistory.push(reading.temperature)\n          if (this.temperatureHistory.length > 20) this.temperatureHistory.shift()\n        }\n        if (typeof reading.humidity === 'number') {\n          this.humidity = reading.humidity\n          this.humidityHistory.push(reading.humidity)\n          if (this.humidityHistory.length > 20) this.humidityHistory.shift()\n        }\n\n        this.status = reading.source === 'test' ? 'Test reading' : 'Sensor reading received'\n        this.updatedAt = new Date().toLocaleTimeString('en-GB')\n      },\n      immediate: true\n    }\n  },\n  methods: {\n    chartPoints(values) {\n      if (values.length < 2) return ''\n      const min = Math.min(...values) - 1\n      const max = Math.max(...values) + 1\n      return values.map((value, index) => {\n        const x = index * 480 / (values.length - 1)\n        const y = 130 - (value - min) * 110 / (max - min)\n        return `${x.toFixed(1)},${y.toFixed(1)}`\n      }).join(' ')\n    }\n  }\n}\n</script>\n\n<style>\n.monitor-v1 {\n  max-width: 1050px;\n  margin: 18px auto;\n  padding: 12px;\n  color: #1d2939;\n  font-family: Arial, sans-serif;\n}\n.monitor-v1 header, .monitor-v1 .readings, .monitor-v1 .charts {\n  display: flex;\n  gap: 16px;\n}\n.monitor-v1 header { align-items: center; justify-content: space-between; margin-bottom: 22px; }\n.monitor-v1 h1 { font-size: 26px; font-weight: 600; margin: 0; }\n.monitor-v1 h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }\n.monitor-v1 .version { font-size: 12px; color: #667085; }\n.monitor-v1 .readings, .monitor-v1 .charts { margin-bottom: 16px; }\n.monitor-v1 .panel { background: #fff; border: 1px solid #e4e7ec; border-radius: 8px; padding: 22px; flex: 1; min-width: 0; }\n.monitor-v1 .label { font-size: 14px; color: #667085; margin: 0; }\n.monitor-v1 .value { font-size: 52px; font-weight: 600; margin: 12px 0 0; }\n.monitor-v1 small { font-size: 25px; font-weight: normal; margin-left: 5px; color: #667085; }\n.monitor-v1 svg { display: block; width: 100%; height: 160px; }\n.monitor-v1 svg line { stroke: #eaecf0; }\n.monitor-v1 svg text { font-size: 13px; fill: #98a2b3; }\n.monitor-v1 polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }\n.monitor-v1 .temp-line { stroke: #178b7a; }\n.monitor-v1 .humidity-line { stroke: #5578bf; }\n.monitor-v1 footer { color: #667085; font-size: 13px; }\n@media (max-width: 650px) {\n  .monitor-v1 h1 { font-size: 21px; }\n  .monitor-v1 .readings, .monitor-v1 .charts { flex-direction: column; }\n}\n</style>\n",
+    "storeOutMessages": false,
+    "passthru": false,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "className": "course-v1-template",
+    "x": 780,
+    "y": 150,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "coursev1_group",
+    "type": "ui-group",
+    "name": "Readings",
+    "page": "coursev1_page",
+    "width": "12",
+    "height": "1",
+    "order": 1,
+    "showTitle": false,
+    "className": "course-v1-group",
+    "visible": "true",
+    "disabled": "false"
+  },
+  {
+    "id": "coursev1_page",
+    "type": "ui-page",
+    "name": "Dashboard",
+    "ui": "coursev1_base",
+    "path": "/dashboard",
+    "icon": "dashboard",
+    "layout": "grid",
+    "theme": "coursev1_theme",
+    "order": 1,
+    "className": "course-v1-page",
+    "visible": "true",
+    "disabled": "false"
+  },
+  {
+    "id": "coursev1_base",
+    "type": "ui-base",
+    "name": "Temperature and humidity",
+    "path": "/monitor",
+    "includeClientData": false,
+    "acceptsClientConfig": [],
+    "showPathInSidebar": false,
+    "showPageTitle": false,
+    "navigationStyle": "temporary",
+    "titleBarStyle": "hidden"
+  },
+  {
+    "id": "coursev1_theme",
+    "type": "ui-theme",
+    "name": "Simple light",
+    "colors": {
+      "surface": "#ffffff",
+      "primary": "#178b7a",
+      "bgPage": "#f5f6f8",
+      "groupBg": "#f5f6f8",
+      "groupOutline": "#f5f6f8"
+    },
+    "sizes": {
+      "pagePadding": "8px",
+      "groupGap": "8px",
+      "groupBorderRadius": "10px",
+      "widgetGap": "0px"
+    }
+  }
+]
