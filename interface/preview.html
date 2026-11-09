@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temperature &amp; Humidity — Version 1</title>
+  <style>
+    body { background: #f5f6f8; margin: 0; }
+
+.monitor-v1 {
+  max-width: 1050px;
+  margin: 18px auto;
+  padding: 12px;
+  color: #1d2939;
+  font-family: Arial, sans-serif;
+}
+.monitor-v1 header, .monitor-v1 .readings, .monitor-v1 .charts {
+  display: flex;
+  gap: 16px;
+}
+.monitor-v1 header { align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.monitor-v1 h1 { font-size: 26px; font-weight: 600; margin: 0; }
+.monitor-v1 h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+.monitor-v1 .version { font-size: 12px; color: #667085; }
+.monitor-v1 .readings, .monitor-v1 .charts { margin-bottom: 16px; }
+.monitor-v1 .panel { background: #fff; border: 1px solid #e4e7ec; border-radius: 8px; padding: 22px; flex: 1; min-width: 0; }
+.monitor-v1 .label { font-size: 14px; color: #667085; margin: 0; }
+.monitor-v1 .value { font-size: 52px; font-weight: 600; margin: 12px 0 0; }
+.monitor-v1 small { font-size: 25px; font-weight: normal; margin-left: 5px; color: #667085; }
+.monitor-v1 svg { display: block; width: 100%; height: 160px; }
+.monitor-v1 svg line { stroke: #eaecf0; }
+.monitor-v1 svg text { font-size: 13px; fill: #98a2b3; }
+.monitor-v1 polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.monitor-v1 .temp-line { stroke: #178b7a; }
+.monitor-v1 .humidity-line { stroke: #5578bf; }
+.monitor-v1 footer { color: #667085; font-size: 13px; }
+@media (max-width: 650px) {
+  .monitor-v1 h1 { font-size: 21px; }
+  .monitor-v1 .readings, .monitor-v1 .charts { flex-direction: column; }
+}
+  </style>
+</head>
+<body>
+  <main class="monitor-v1">
+    <header><h1>Temperature &amp; Humidity</h1><span class="version">Version 1</span></header>
+    <div class="readings">
+      <section class="panel"><p class="label">Temperature</p><p class="value">22.4<small>°C</small></p></section>
+      <section class="panel"><p class="label">Humidity</p><p class="value">48.3<small>%</small></p></section>
+    </div>
+    <div class="charts">
+      <section class="panel">
+        <h2>Temperature history</h2>
+        <svg viewBox="0 0 480 150"><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="80" x2="480" y2="80"/><line x1="0" y1="120" x2="480" y2="120"/><polyline class="temp-line" points="0,115 60,100 120,90 180,85 240,105 300,75 360,70 420,60 480,50"/></svg>
+      </section>
+      <section class="panel">
+        <h2>Humidity history</h2>
+        <svg viewBox="0 0 480 150"><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="80" x2="480" y2="80"/><line x1="0" y1="120" x2="480" y2="120"/><polyline class="humidity-line" points="0,100 60,110 120,90 180,75 240,80 300,75 360,60 420,65 480,55"/></svg>
+      </section>
+    </div>
+    <footer>Example readings only — this HTML preview is not connected to the sensor.</footer>
+  </main>
+</body>
+</html>

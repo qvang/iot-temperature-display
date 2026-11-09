@@ -1,0 +1,131 @@
+<template>
+  <div class="monitor-v1">
+    <header>
+      <h1>Temperature &amp; Humidity</h1>
+      <span class="version">Version 1</span>
+    </header>
+
+    <div class="readings">
+      <section class="panel">
+        <p class="label">Temperature</p>
+        <p class="value">{{ temperature === null ? '—' : temperature.toFixed(1) }}<small>°C</small></p>
+      </section>
+      <section class="panel">
+        <p class="label">Humidity</p>
+        <p class="value">{{ humidity === null ? '—' : humidity.toFixed(1) }}<small>%</small></p>
+      </section>
+    </div>
+
+    <div class="charts">
+      <section class="panel">
+        <h2>Temperature history</h2>
+        <svg viewBox="0 0 480 150" aria-label="Temperature history">
+          <line x1="0" y1="40" x2="480" y2="40" />
+          <line x1="0" y1="80" x2="480" y2="80" />
+          <line x1="0" y1="120" x2="480" y2="120" />
+          <polyline :points="chartPoints(temperatureHistory)" class="temp-line" />
+          <text v-if="temperatureHistory.length < 2" x="240" y="82" text-anchor="middle">Waiting for readings</text>
+        </svg>
+      </section>
+      <section class="panel">
+        <h2>Humidity history</h2>
+        <svg viewBox="0 0 480 150" aria-label="Humidity history">
+          <line x1="0" y1="40" x2="480" y2="40" />
+          <line x1="0" y1="80" x2="480" y2="80" />
+          <line x1="0" y1="120" x2="480" y2="120" />
+          <polyline :points="chartPoints(humidityHistory)" class="humidity-line" />
+          <text v-if="humidityHistory.length < 2" x="240" y="82" text-anchor="middle">Waiting for readings</text>
+        </svg>
+      </section>
+    </div>
+
+    <footer>
+      {{ status }}
+      <span v-if="updatedAt"> · Last reading: {{ updatedAt }}</span>
+    </footer>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      temperature: null,
+      humidity: null,
+      temperatureHistory: [],
+      humidityHistory: [],
+      status: 'Waiting for readings',
+      updatedAt: ''
+    }
+  },
+  watch: {
+    msg: {
+      handler(message) {
+        if (!message?.payload?.interfaceV1) return
+        const reading = message.payload
+
+        if (typeof reading.temperature === 'number') {
+          this.temperature = reading.temperature
+          this.temperatureHistory.push(reading.temperature)
+          if (this.temperatureHistory.length > 20) this.temperatureHistory.shift()
+        }
+        if (typeof reading.humidity === 'number') {
+          this.humidity = reading.humidity
+          this.humidityHistory.push(reading.humidity)
+          if (this.humidityHistory.length > 20) this.humidityHistory.shift()
+        }
+
+        this.status = reading.source === 'test' ? 'Test reading' : 'Sensor reading received'
+        this.updatedAt = new Date().toLocaleTimeString('en-GB')
+      },
+      immediate: true
+    }
+  },
+  methods: {
+    chartPoints(values) {
+      if (values.length < 2) return ''
+      const min = Math.min(...values) - 1
+      const max = Math.max(...values) + 1
+      return values.map((value, index) => {
+        const x = index * 480 / (values.length - 1)
+        const y = 130 - (value - min) * 110 / (max - min)
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      }).join(' ')
+    }
+  }
+}
+</script>
+
+<style>
+.monitor-v1 {
+  max-width: 1050px;
+  margin: 18px auto;
+  padding: 12px;
+  color: #1d2939;
+  font-family: Arial, sans-serif;
+}
+.monitor-v1 header, .monitor-v1 .readings, .monitor-v1 .charts {
+  display: flex;
+  gap: 16px;
+}
+.monitor-v1 header { align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.monitor-v1 h1 { font-size: 26px; font-weight: 600; margin: 0; }
+.monitor-v1 h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+.monitor-v1 .version { font-size: 12px; color: #667085; }
+.monitor-v1 .readings, .monitor-v1 .charts { margin-bottom: 16px; }
+.monitor-v1 .panel { background: #fff; border: 1px solid #e4e7ec; border-radius: 8px; padding: 22px; flex: 1; min-width: 0; }
+.monitor-v1 .label { font-size: 14px; color: #667085; margin: 0; }
+.monitor-v1 .value { font-size: 52px; font-weight: 600; margin: 12px 0 0; }
+.monitor-v1 small { font-size: 25px; font-weight: normal; margin-left: 5px; color: #667085; }
+.monitor-v1 svg { display: block; width: 100%; height: 160px; }
+.monitor-v1 svg line { stroke: #eaecf0; }
+.monitor-v1 svg text { font-size: 13px; fill: #98a2b3; }
+.monitor-v1 polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.monitor-v1 .temp-line { stroke: #178b7a; }
+.monitor-v1 .humidity-line { stroke: #5578bf; }
+.monitor-v1 footer { color: #667085; font-size: 13px; }
+@media (max-width: 650px) {
+  .monitor-v1 h1 { font-size: 21px; }
+  .monitor-v1 .readings, .monitor-v1 .charts { flex-direction: column; }
+}
+</style>
