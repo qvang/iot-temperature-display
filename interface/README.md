@@ -1,13 +1,14 @@
-# Temperature and Humidity Interface — Version 1
+# Temperature and Humidity Interface — Version 2
 
-Basic Node-RED dashboard for displaying temperature and humidity readings.
+- `interface-v2-flow.json` contains the flow for FlowFuse Dashboard 2.
+- `dashboard-template.html` contains the source for the flow’s **Dashboard layout** node.
+- `preview.html` opens in a browser with sample readings and requires no connection.
 
-## Files
-- interface-v1-flow.json — Node-RED flow for the dashboard.
-- dashboard-template.html — Dashboard HTML, CSS and JavaScript.
-- preview.html — Example layout using sample readings.
+For a fresh setup, install FlowFuse Dashboard 2 in Node-RED, import the flow, and check
+the MQTT broker settings. Deploy and open `/monitor/dashboard`.
 
-## Setup
-Import the JSON flow into Node-RED, configure the MQTT broker and deploy.
+To update a deployed Version 1, paste `dashboard-template.html` into its **Dashboard layout**
+node and deploy. This keeps your existing broker settings.
 
-The interface includes a manual test input. Connection to the real Arduino sensor still needs to be tested.
+To check the dashboard without hardware, click **Test: send one example reading** twice.
+The first click shows both values. The second draws both trend lines.

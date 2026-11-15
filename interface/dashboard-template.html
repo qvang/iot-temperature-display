@@ -1,49 +1,42 @@
 <template>
-  <div class="monitor-v1">
-    <header>
-      <h1>Temperature &amp; Humidity</h1>
-      <span class="version">Version 1</span>
-    </header>
-
-    <div class="readings">
-      <section class="panel">
-        <p class="label">Temperature</p>
-        <p class="value">{{ temperature === null ? '—' : temperature.toFixed(1) }}<small>°C</small></p>
+  <main class="conditions-monitor" aria-label="Temperature and humidity">
+    <div class="conditions-grid">
+      <section class="conditions-panel conditions-temperature">
+        <h2 class="conditions-label">Temperature</h2>
+        <p class="conditions-value">{{ temperature === null ? '—' : temperature.toFixed(1) }}<small>°C</small></p>
+        <div class="conditions-history">
+          <h3>Recent readings</h3>
+          <svg viewBox="0 0 480 150" role="img" aria-label="Temperature trend">
+            <line x1="0" y1="40" x2="480" y2="40" />
+            <line x1="0" y1="80" x2="480" y2="80" />
+            <line x1="0" y1="120" x2="480" y2="120" />
+            <polyline :points="chartPoints(temperatureHistory)" />
+          </svg>
+          <p v-if="temperatureHistory.length < 2" class="conditions-empty">Waiting for readings</p>
+        </div>
       </section>
-      <section class="panel">
-        <p class="label">Humidity</p>
-        <p class="value">{{ humidity === null ? '—' : humidity.toFixed(1) }}<small>%</small></p>
+
+      <section class="conditions-panel conditions-humidity">
+        <h2 class="conditions-label">Humidity</h2>
+        <p class="conditions-value">{{ humidity === null ? '—' : humidity.toFixed(1) }}<small>%</small></p>
+        <div class="conditions-history">
+          <h3>Recent readings</h3>
+          <svg viewBox="0 0 480 150" role="img" aria-label="Humidity trend">
+            <line x1="0" y1="40" x2="480" y2="40" />
+            <line x1="0" y1="80" x2="480" y2="80" />
+            <line x1="0" y1="120" x2="480" y2="120" />
+            <polyline :points="chartPoints(humidityHistory)" />
+          </svg>
+          <p v-if="humidityHistory.length < 2" class="conditions-empty">Waiting for readings</p>
+        </div>
       </section>
     </div>
 
-    <div class="charts">
-      <section class="panel">
-        <h2>Temperature history</h2>
-        <svg viewBox="0 0 480 150" aria-label="Temperature history">
-          <line x1="0" y1="40" x2="480" y2="40" />
-          <line x1="0" y1="80" x2="480" y2="80" />
-          <line x1="0" y1="120" x2="480" y2="120" />
-          <polyline :points="chartPoints(temperatureHistory)" class="temp-line" />
-          <text v-if="temperatureHistory.length < 2" x="240" y="82" text-anchor="middle">Waiting for readings</text>
-        </svg>
-      </section>
-      <section class="panel">
-        <h2>Humidity history</h2>
-        <svg viewBox="0 0 480 150" aria-label="Humidity history">
-          <line x1="0" y1="40" x2="480" y2="40" />
-          <line x1="0" y1="80" x2="480" y2="80" />
-          <line x1="0" y1="120" x2="480" y2="120" />
-          <polyline :points="chartPoints(humidityHistory)" class="humidity-line" />
-          <text v-if="humidityHistory.length < 2" x="240" y="82" text-anchor="middle">Waiting for readings</text>
-        </svg>
-      </section>
-    </div>
-
-    <footer>
-      {{ status }}
-      <span v-if="updatedAt"> · Last reading: {{ updatedAt }}</span>
+    <footer class="conditions-status">
+      <span>{{ status }}</span>
+      <span v-if="updatedAt">{{ updatedAt }}</span>
     </footer>
-  </div>
+  </main>
 </template>
 
 <script>
@@ -97,35 +90,126 @@ export default {
 </script>
 
 <style>
-.monitor-v1 {
-  max-width: 1050px;
-  margin: 18px auto;
-  padding: 12px;
-  color: #1d2939;
-  font-family: Arial, sans-serif;
+.conditions-monitor {
+  box-sizing: border-box;
+  max-width: 68rem;
+  container-type: inline-size;
+  margin: clamp(.5rem, 2.6vw, 2.5rem) auto;
+  padding: clamp(.875rem, 4vw, 3.75rem);
+  border-radius: clamp(1.5rem, 4vw, 3rem);
+  background:
+    radial-gradient(ellipse at 8% 10%, #f9ddc7, transparent 55%),
+    radial-gradient(ellipse at 94% 82%, #c2dce9, transparent 61%),
+    #e8ebf4;
+  color: #172333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-.monitor-v1 header, .monitor-v1 .readings, .monitor-v1 .charts {
+
+.conditions-monitor .conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: clamp(.75rem, 2vw, 1.25rem);
+}
+
+.conditions-monitor .conditions-panel {
+  min-width: 0;
+  padding: clamp(1.125rem, 3.4vw, 2.375rem);
+  border: 1px solid #fff;
+  border-radius: clamp(1.125rem, 3vw, 2rem);
+  background: #fafbfe;
+  box-shadow: 0 12px 28px #263a5910, inset 0 1px 0 #fff;
+}
+
+@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .conditions-monitor .conditions-panel {
+    background: linear-gradient(155deg, #ffffffd9, #ffffff91 60%, #ffffffb3);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+
+.conditions-monitor .conditions-temperature { --reading-accent: #98452e; }
+.conditions-monitor .conditions-humidity { --reading-accent: #215d83; }
+
+.conditions-monitor .conditions-label {
+  margin: 0;
+  color: var(--reading-accent);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.conditions-monitor .conditions-value {
+  margin: .65rem 0 1.8rem;
+  font-size: 3.1rem;
+  font-size: clamp(3.1rem, 8.5cqi, 5.75rem);
+  font-weight: 550;
+  line-height: 1;
+  letter-spacing: -.065em;
+  font-variant-numeric: tabular-nums;
+}
+
+.conditions-monitor .conditions-value small {
+  margin-inline-start: .32em;
+  color: #4e5c6d;
+  font-size: .38em;
+  font-weight: 500;
+  letter-spacing: -.03em;
+  vertical-align: .19em;
+}
+
+.conditions-monitor .conditions-history {
+  position: relative;
+  padding-top: 1rem;
+  border-top: 1px solid #52677d2e;
+}
+
+.conditions-monitor .conditions-history h3,
+.conditions-monitor .conditions-status,
+.conditions-monitor .conditions-empty {
+  margin: 0;
+  color: #48586b;
+  font-size: .8125rem;
+  font-weight: 550;
+}
+
+.conditions-monitor svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: .35rem;
+  overflow: visible;
+}
+
+.conditions-monitor svg line { stroke: #52677d26; }
+.conditions-monitor svg polyline {
+  fill: none;
+  stroke: var(--reading-accent);
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.conditions-monitor .conditions-empty {
+  position: absolute;
+  inset: 55% .25rem auto;
+  text-align: center;
+}
+
+.conditions-monitor .conditions-status {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .3rem 1rem;
+  margin: 1rem .25rem 0;
+  font-variant-numeric: tabular-nums;
 }
-.monitor-v1 header { align-items: center; justify-content: space-between; margin-bottom: 22px; }
-.monitor-v1 h1 { font-size: 26px; font-weight: 600; margin: 0; }
-.monitor-v1 h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
-.monitor-v1 .version { font-size: 12px; color: #667085; }
-.monitor-v1 .readings, .monitor-v1 .charts { margin-bottom: 16px; }
-.monitor-v1 .panel { background: #fff; border: 1px solid #e4e7ec; border-radius: 8px; padding: 22px; flex: 1; min-width: 0; }
-.monitor-v1 .label { font-size: 14px; color: #667085; margin: 0; }
-.monitor-v1 .value { font-size: 52px; font-weight: 600; margin: 12px 0 0; }
-.monitor-v1 small { font-size: 25px; font-weight: normal; margin-left: 5px; color: #667085; }
-.monitor-v1 svg { display: block; width: 100%; height: 160px; }
-.monitor-v1 svg line { stroke: #eaecf0; }
-.monitor-v1 svg text { font-size: 13px; fill: #98a2b3; }
-.monitor-v1 polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.monitor-v1 .temp-line { stroke: #178b7a; }
-.monitor-v1 .humidity-line { stroke: #5578bf; }
-.monitor-v1 footer { color: #667085; font-size: 13px; }
-@media (max-width: 650px) {
-  .monitor-v1 h1 { font-size: 21px; }
-  .monitor-v1 .readings, .monitor-v1 .charts { flex-direction: column; }
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .conditions-monitor .conditions-panel {
+    background: #fafbfe;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 </style>
